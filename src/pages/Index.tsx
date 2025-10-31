@@ -8,10 +8,32 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  oldPrice?: number;
+  image: string;
+  category: string;
+  size: string;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+};
+
+type CartItem = Product & { quantity: number };
 
 const Index = () => {
   const [onlineCount, setOnlineCount] = useState(39383);
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSize, setSelectedSize] = useState('all');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -64,6 +86,113 @@ const Index = () => {
     }
   ];
 
+  const products: Product[] = [
+    {
+      id: 1,
+      name: 'Premium Classic',
+      price: 3990,
+      oldPrice: 5990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/8f5a0459-8ad5-411d-870b-b4fe804a3d8e.jpg',
+      category: 'classic',
+      size: 'M',
+      rating: 5,
+      reviews: 234,
+      inStock: true
+    },
+    {
+      id: 2,
+      name: 'Elite Pro Series',
+      price: 5990,
+      oldPrice: 7990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/aa54726e-ecd7-4507-9b89-51ac81f97b7a.jpg',
+      category: 'premium',
+      size: 'L',
+      rating: 5,
+      reviews: 456,
+      inStock: true
+    },
+    {
+      id: 3,
+      name: 'Starter Kit',
+      price: 2990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/c00bca73-6dc7-45ba-a1d3-bf48e2e758ad.jpg',
+      category: 'beginner',
+      size: 'S',
+      rating: 5,
+      reviews: 189,
+      inStock: true
+    },
+    {
+      id: 4,
+      name: 'Professional XL',
+      price: 6990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/8f5a0459-8ad5-411d-870b-b4fe804a3d8e.jpg',
+      category: 'premium',
+      size: 'XL',
+      rating: 5,
+      reviews: 312,
+      inStock: true
+    },
+    {
+      id: 5,
+      name: 'Comfort Medium',
+      price: 4490,
+      oldPrice: 5990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/aa54726e-ecd7-4507-9b89-51ac81f97b7a.jpg',
+      category: 'classic',
+      size: 'M',
+      rating: 5,
+      reviews: 278,
+      inStock: true
+    },
+    {
+      id: 6,
+      name: 'Deluxe Collection',
+      price: 8990,
+      image: 'https://cdn.poehali.dev/projects/03c54094-04df-4f80-9ac9-faf7aba0e7dd/files/c00bca73-6dc7-45ba-a1d3-bf48e2e758ad.jpg',
+      category: 'premium',
+      size: 'L',
+      rating: 5,
+      reviews: 523,
+      inStock: true
+    }
+  ];
+
+  const filteredProducts = products.filter(product => {
+    if (selectedCategory !== 'all' && product.category !== selectedCategory) return false;
+    if (selectedSize !== 'all' && product.size !== selectedSize) return false;
+    return true;
+  });
+
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId: number) => {
+    setCart(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const updateQuantity = (productId: number, quantity: number) => {
+    if (quantity === 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart(prev =>
+      prev.map(item => (item.id === productId ? { ...item, quantity } : item))
+    );
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   const faqs = [
     {
       question: 'Какие гарантии качества вы предоставляете?',
@@ -102,7 +231,75 @@ const Index = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="font-medium">{onlineCount.toLocaleString()} онлайн</span>
             </Badge>
-            <Button>Каталог</Button>
+            <Button onClick={() => setShowCatalog(true)}>Каталог</Button>
+            <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="relative">
+                  <Icon name="ShoppingCart" size={20} />
+                  {cartCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {cartCount}
+                    </Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Корзина</SheetTitle>
+                </SheetHeader>
+                <div className="mt-8 space-y-4">
+                  {cart.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">Корзина пуста</p>
+                  ) : (
+                    <>
+                      {cart.map(item => (
+                        <div key={item.id} className="flex gap-4 pb-4 border-b">
+                          <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded" />
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{item.name}</h4>
+                            <p className="text-sm text-muted-foreground">{item.price.toLocaleString()} ₽</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              >
+                                -
+                              </Button>
+                              <span className="text-sm">{item.quantity}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              >
+                                +
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeFromCart(item.id)}
+                                className="ml-auto"
+                              >
+                                <Icon name="Trash2" size={16} />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="pt-4 space-y-4">
+                        <div className="flex justify-between text-lg font-semibold">
+                          <span>Итого:</span>
+                          <span>{cartTotal.toLocaleString()} ₽</span>
+                        </div>
+                        <Button className="w-full" size="lg">
+                          Оформить заказ
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
@@ -120,7 +317,7 @@ const Index = () => {
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Профессиональная продукция премиум-класса с гарантией качества
               </p>
-              <Button size="lg" className="text-lg px-8 py-6">
+              <Button size="lg" className="text-lg px-8 py-6" onClick={() => setShowCatalog(true)}>
                 Перейти в каталог
                 <Icon name="ArrowRight" className="ml-2" size={20} />
               </Button>
@@ -158,6 +355,114 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {showCatalog && (
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-between mb-12">
+                <div>
+                  <h2 className="text-4xl font-bold mb-2">Каталог продукции</h2>
+                  <p className="text-muted-foreground">Выберите подходящий вариант из {products.length} товаров</p>
+                </div>
+                <Button variant="outline" onClick={() => setShowCatalog(false)}>
+                  <Icon name="X" className="mr-2" size={20} />
+                  Закрыть
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-4 mb-8">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Категория" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все категории</SelectItem>
+                    <SelectItem value="beginner">Для начинающих</SelectItem>
+                    <SelectItem value="classic">Классика</SelectItem>
+                    <SelectItem value="premium">Премиум</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Размер" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все размеры</SelectItem>
+                    <SelectItem value="S">S - Маленький</SelectItem>
+                    <SelectItem value="M">M - Средний</SelectItem>
+                    <SelectItem value="L">L - Большой</SelectItem>
+                    <SelectItem value="XL">XL - Очень большой</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map(product => (
+                  <Card key={product.id} className="overflow-hidden hover-scale transition-all">
+                    <div className="aspect-square overflow-hidden">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-xl font-semibold">{product.name}</h3>
+                        <Badge variant="secondary">{product.size}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex">
+                          {[...Array(product.rating)].map((_, i) => (
+                            <Icon key={i} name="Star" className="text-yellow-400 fill-yellow-400" size={14} />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">({product.reviews})</span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-2xl font-bold">{product.price.toLocaleString()} ₽</span>
+                        {product.oldPrice && (
+                          <span className="text-lg text-muted-foreground line-through">
+                            {product.oldPrice.toLocaleString()} ₽
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          addToCart(product);
+                          setCartOpen(true);
+                        }}
+                      >
+                        <Icon name="ShoppingCart" className="mr-2" size={18} />
+                        В корзину
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-xl text-muted-foreground">Товары не найдены</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSelectedSize('all');
+                    }}
+                  >
+                    Сбросить фильтры
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
